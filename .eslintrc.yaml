@@ -1,0 +1,3 @@
+---
+extends:
+  - '@jasonk/eslint-config/es5'

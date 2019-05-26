@@ -1,0 +1,4 @@
+--require @babel/register
+--require source-map-support/register
+--require test/mocha-setup
+--timeout 5000
