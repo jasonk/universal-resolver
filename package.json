@@ -3,7 +3,7 @@
   "description": "Smarter import path resolver",
   "author": "Jason Kohles <email@jasonkohles.com>",
   "homepage": "https://github.com/jasonk/universal-resolver#readme",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "main": "index.js",
   "license": "MIT",
   "files": [
