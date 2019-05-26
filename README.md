@@ -251,7 +251,7 @@ available, see the [tags on this repository][tags].
 
 ## Authors ##
 
-* **Jason Kohles ** - [jasonk](https://github.com/jasonk)
+* **Jason Kohles** - [jasonk](https://github.com/jasonk)
 
 See also the list of [contributors][contribs] who participated in this
 project.
@@ -276,7 +276,6 @@ this isn't quite what you were looking for, they may be of help:
 [eslint]: https://eslint.org/
 [webpack]: https://webpack.js.org/
 [bpri-eslint]: https://github.com/bingqichen/eslint-import-resolver-babel-plugin-root-import
-[swiper-babel]:
 [swiper-babel]: https://github.com/jasonk/swiper/blob/master/babel.config.js
 [my-eslint-config]: https://github.com/jasonk/eslint-config/blob/master/babel.js
 [babel-loader]: https://webpack.js.org/loaders/babel-loader/
