@@ -142,6 +142,7 @@ class Resolver {
   }
 
   preparePackages( packages ) {
+    debug( 'THIS', this );
     this.packages.forEach( pkg => {
       [ 'prefix', 'source', 'main' ].forEach( x => {
         if ( ! pkg[ x ] ) pkg[ x ] = this[ x ];
@@ -189,20 +190,81 @@ class Resolver {
     // We can identify the origin package earlier because the origin
     // path is already resolved.
     const opkg = this.findPackageForOrigin( origin );
-    if ( opkg ) debug( `Found package ${opkg.name} for origin` );
+    if ( opkg ) {
+      debug( `Found package ${opkg.name} for origin` );
+    } else {
+      debug( `No origin package for ${origin}` );
+    }
 
     const matches = x => {
       if ( x.length === 0 ) return false;
       return target === x || target.startsWith( x + '/' );
     };
 
+    // Types of imports:
+    //  "prefix"    - is '~' or starts with '~/'
+    //  "self"      - is '@our/package' or starts with '@our/package'
+    //  "relative"  - is '.' or '..' or starts with './' or '../'
+    //  "module"    - none of the above
+
+    // If the target is a "prefix" or "self" import then the first
+    // thing we do is to to turn it into a relative import
+    if ( opkg ) {
+      let prefix = null;
+      let which = null;
+      if ( this.resolvePrefixes && matches( opkg.prefix ) ) {
+        prefix = opkg.prefix;
+        which = 'resolvePrefixes';
+      } else if ( this.resolveSelf && matches( opkg.name ) ) {
+        prefix = opkg.name;
+        which = 'resolveSelf';
+      }
+      if ( prefix ) {
+        // If it's prefixed or self then we treat those the same way,
+        // by turning them into relative imports
+        target = target.substring( prefix.length );
+        debug( `${which} removed prefix and got ${target}` );
+        target = path.resolve( opkg.root, opkg.source, `./${target}` );
+        debug( `${which} resolved to ${target}` );
+        target = path.relative( path.dirname( origin ), target );
+        debug( `prefix relativized to ${target}` );
+      }
+    }
+
+    const rel = matches( '.' ) || matches( '..' )
+      || ( opkg && matches( opkg.prefix ) );
+
+    const tpkg = rel ? opkg : this.findPackageForTarget( target );
+
+    if ( tpkg && ( tpkg !== opkg ) && matches( tpkg.name ) ) {
+      const direct = path.resolve(
+        tpkg.root,
+        './' + target.substring( tpkg.name.length ),
+      );
+      if ( fs.existsSync( direct ) ) {
+        debug( `Direct path exists, using it`, direct );
+        target = direct;
+      } else if ( this.resolvePackages ) {
+        target = path.resolve(
+          tpkg.root,
+          this.prod ? tpkg.dest : tpkg.source,
+          './' + target.substring( tpkg.name.length ),
+        );
+        debug( `resolvePackages resolved to ${target}` );
+      } else if ( this.resolveMain && target === tpkg.name ) {
+        target = path.resolve(
+          tpkg.root,
+          this.prod ? tpkg.dest : tpkg.source,
+        );
+        debug( `resolveMain resolved to ${target}` );
+      }
+    }
+
     let is_module = false;
     const finish = ( msg ) => {
       debug( 'Finishing', target, msg ? `because ${msg}` : '' );
-      if ( is_module ) {
-        return target;
-        // if ( opts.fallback ) return opts.fallback( target );
-      }
+      if ( is_module ) return target;
+
       target = path.normalize( target );
       if ( opts.relative ) {
         if ( path.isAbsolute( target ) ) {
@@ -219,45 +281,19 @@ class Resolver {
           target = path.resolve( path.dirname( origin ), target );
         }
       }
+      // If the original request ended with a slash, make sure the
+      // resolved one does too..
       if ( initialTarget.endsWith( '/' ) && ! target.endsWith( '/' ) ) {
         target += '/';
       }
       debug( 'Returning resolved path', target, msg ? `(${msg})` : '' );
       return target;
     };
+
     // "relative" - starts with "./" or "../" or is "." or ".."
     // If it's a relative import, then all we have to do is turn it
     // into an absolute path (if the `relative` param was false)
-    if ( matches( '.' ) || matches( '..' ) ) return finish( 'relative' );
-
-    if ( opkg ) {
-      let prefix = null;
-      //  "prefixed" - starts with "~/" or is "~"
-      if ( matches( opkg.prefix ) ) {
-        if ( this.resolvePrefixes ) {
-          prefix = opkg.prefix;
-        } else {
-          return finish( '!resolvePrefixes' );
-        }
-      }
-
-      //  "self" - is own package name, or starts with it + '/'
-      if ( matches( opkg.name ) ) {
-        if ( this.resolveSelf ) {
-          prefix = opkg.name;
-        } else {
-          return finish( '!resolveSelf' );
-        }
-      }
-
-      if ( prefix ) {
-        // If it's prefixed or self then we treat those the same way.
-        target = target.substring( prefix.length );
-        target = path.resolve( opkg.root, opkg.source, `./${target}` );
-        debug( `prefix resolved ${initialTarget} to ${target}` );
-        return finish( 'prefix' );
-      }
-    }
+    // if ( matches( '.' ) || matches( '..' ) ) return finish( 'relative' );
 
     // If we reach this point then the thing being required is
     // a module name, so we don't treat it as a relative path anymore.
@@ -268,19 +304,12 @@ class Resolver {
 
     // If we get to here then the target is in a different package
     // from the origin.
-    const tpkg = this.findPackageForTarget( target );
     if ( ! tpkg ) {
       // If we don't have a configuration for the target package, then
       // there isn't anything for us to do.
       return finish();
     }
 
-    if ( this.resolveMain && target === tpkg.name ) {
-      target = path.resolve( tpkg.root, tpkg.source );
-      finish();
-    }
-
-    // if ( this.resolvePackages ) this.handlePackages( ctx );
     return finish();
   }
 
