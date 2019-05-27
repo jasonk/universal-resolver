@@ -182,9 +182,16 @@ class Resolver {
     const initialOrigin = origin;
     const initialTarget = target;
 
-    if ( this.resolveSymlinks ) origin = fs.realpathSync( origin );
-    if ( origin !== initialOrigin ) {
-      debug( `Origin symlink resolved to`, origin );
+    if ( this.resolveSymlinks ) {
+      try {
+        origin = fs.realpathSync( origin );
+        if ( origin !== initialOrigin ) {
+          debug( `Origin symlink resolved to`, origin );
+        }
+      } catch( err ) {
+        if ( err.code !== 'ENOENT' ) throw err;
+        debug( `File ${origin} does not exist, can't resolveSymlinks` );
+      }
     }
 
     // We can identify the origin package earlier because the origin
@@ -226,7 +233,7 @@ class Resolver {
         debug( `${which} removed prefix and got ${target}` );
         target = path.resolve( opkg.root, opkg.source, `./${target}` );
         debug( `${which} resolved to ${target}` );
-        target = path.relative( path.dirname( origin ), target );
+        target = this.makeRelative( origin, target );
         debug( `prefix relativized to ${target}` );
       }
     }
@@ -251,66 +258,44 @@ class Resolver {
           './' + target.substring( tpkg.name.length ),
         );
         debug( `resolvePackages resolved to ${target}` );
-      } else if ( this.resolveMain && target === tpkg.name ) {
-        target = path.resolve(
-          tpkg.root,
-          this.prod ? tpkg.dest : tpkg.source,
-        );
-        debug( `resolveMain resolved to ${target}` );
+      }
+      if ( this.resolveMain ) {
+        if ( target === tpkg.name || target === tpkg.root ) {
+          target = path.resolve(
+            tpkg.root,
+            this.prod ? tpkg.dest : tpkg.source,
+          );
+          debug( `resolveMain resolved to ${target}` );
+        }
       }
     }
 
-    let is_module = false;
-    const finish = ( msg ) => {
-      debug( 'Finishing', target, msg ? `because ${msg}` : '' );
-      if ( is_module ) return target;
+    debug( 'Finishing', target );
 
-      target = path.normalize( target );
-      if ( opts.relative ) {
-        if ( path.isAbsolute( target ) ) {
-          target = path.relative( path.dirname( origin ), target );
-        }
-        // If it was in a subdirectory then path.relative won't
-        // include the './', but we need it or it will be
-        // interpreted as a module name
-        const lead = target.split( path.sep )[0];
-        if ( lead !== '.' && lead !== '..' ) target = `./${target}`;
-      } else {
-        // eslint-disable-next-line no-lonely-if
-        if ( ! path.isAbsolute( target ) ) {
-          target = path.resolve( path.dirname( origin ), target );
-        }
-      }
-      // If the original request ended with a slash, make sure the
-      // resolved one does too..
-      if ( initialTarget.endsWith( '/' ) && ! target.endsWith( '/' ) ) {
-        target += '/';
-      }
-      debug( 'Returning resolved path', target, msg ? `(${msg})` : '' );
-      return target;
-    };
-
-    // "relative" - starts with "./" or "../" or is "." or ".."
-    // If it's a relative import, then all we have to do is turn it
-    // into an absolute path (if the `relative` param was false)
-    // if ( matches( '.' ) || matches( '..' ) ) return finish( 'relative' );
-
-    // If we reach this point then the thing being required is
-    // a module name, so we don't treat it as a relative path anymore.
-    is_module = true;
-
-    // None of the stuff below happens when doing a production build
-    if ( this.prod ) return finish();
-
-    // If we get to here then the target is in a different package
-    // from the origin.
-    if ( ! tpkg ) {
-      // If we don't have a configuration for the target package, then
-      // there isn't anything for us to do.
-      return finish();
+    target = path.normalize( target );
+    if ( opts.relative && path.isAbsolute( target ) ) {
+      target = this.makeRelative( origin, target );
     }
+    if ( ! opts.relative && ! path.isAbsolute( target ) ) {
+      target = path.resolve( path.dirname( origin ), target );
+    }
+    // If the original request ended with a slash, make sure the
+    // resolved one does too..
+    if ( initialTarget.endsWith( '/' ) && ! target.endsWith( '/' ) ) {
+      target += '/';
+    }
+    debug( 'Returning resolved path', target );
+    return target;
+  }
 
-    return finish();
+  makeRelative( origin, target ) {
+    target = path.relative( path.dirname( origin ), target );
+    // If it was in a subdirectory then path.relative won't
+    // include the './', but we need it or it will be
+    // interpreted as a module name
+    const lead = target.split( /[\\/]/u )[0];
+    if ( lead !== '.' && lead !== '..' ) target = `./${target}`;
+    return target;
   }
 
 }

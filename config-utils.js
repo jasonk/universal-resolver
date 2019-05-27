@@ -77,13 +77,13 @@ function findConfigIn( dir ) {
     debug( 'found universal-resolver config in', dir, ownConfig );
     return resolveConfig( ownConfig, dir );
   }
-  for ( const name of [ 'package.json', 'lerna.json' ] ) {
+  for ( const name of [ 'lerna.json', 'package.json' ] ) {
     const config = readConfig( dir, name );
     if ( ! config ) continue;
     const ws = config.workspaces;
     const pkgs = config.packages;
     const ur = config[ 'universal-resolver' ];
-    if ( ! ( ws || pkgs || ur ) ) continue;
+    if ( ! ( ws || pkgs ) ) continue;
     debug( 'found', name, 'in', dir );
     const conf = ur || {};
     if ( ! conf.packages ) conf.packages = ws || pkgs;
@@ -93,7 +93,6 @@ function findConfigIn( dir ) {
 
 function readConfig( dir, name ) {
   try {
-    const file = path.join( dir, name );
     return require( path.join( dir, name ) );
   } catch( err ) {
     if ( err.code === 'MODULE_NOT_FOUND' ) {
@@ -105,13 +104,12 @@ function readConfig( dir, name ) {
 
 function preparePackages( config ) {
   if ( ! Array.isArray( config.packages ) ) config.packages = [];
-  // throw new Error( '[universal-resolver] Could not find packages' );
-  const pathto = file => path.resolve( config.root, file );
   const pkgs = [];
   config.packages.forEach( pkg => {
     const root = ( typeof pkg === 'string' ) ? pkg : pkg.root;
     if ( ! root ) {
       const json = JSON.stringify( pkg );
+      // eslint-disable-next-line no-console
       console.error( `[universal-resolver] No root for ${json}` );
       return;
     }
@@ -119,9 +117,9 @@ function preparePackages( config ) {
     const pack = ( name ) => files.push( path.resolve( config.root, name ) );
     if ( globby.hasMagic( root ) ) {
       const opts = { cwd : config.root, onlyDirectories : true };
-      globby.sync( pkg, opts ).forEach( pack );
+      globby.sync( root, opts ).forEach( pack );
     } else {
-      pack( pkg );
+      pack( root );
     }
     if ( typeof pkg === 'string' ) pkg = {};
     debug( 'FILES', files );

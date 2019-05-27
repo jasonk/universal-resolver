@@ -1,3 +1,5 @@
 ---
 extends:
   - '@jasonk/eslint-config/es5'
+rules:
+  import/no-extraneous-dependencies: off

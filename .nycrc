@@ -1,3 +1,4 @@
 {
-  "reporter": [ "json", "text-summary", "json-summary", "html", "lcovonly" ]
+  "reporter": [ "json", "text-summary", "json-summary", "html", "lcovonly" ],
+  "all": true
 }

@@ -8,6 +8,7 @@ describe( 'findConfig', () => {
       'UNIVERSAL_RESOLVER_CONFIG',
       'UNIVERSAL_RESOLVER_MODE',
       'UNIVERSAL_RESOLVER_ROOT',
+      // eslint-disable-next-line no-process-env
     ].forEach( x => ( delete process.env[ x ] ) );
   } );
 
@@ -31,14 +32,17 @@ describe( 'findConfig', () => {
     tryRepo( 'js-repos', 'package-b' );
   } );
 
+  /*
   it( 'does not find configs in other types of repos', () => {
     ( () => tryRepo( 'not-a-repo' ) )
-      .should.throw( /Could not find packages/u );;
+      .should.throw( /Could not find packages/u );
   } );
+  */
 
   it( 'finds configs using UNIVERSAL_RESOLVER_ROOT', () => {
     process.chdir( __dirname );
     const root = path.resolve( __dirname, 'fixtures', 'json-repos' );
+    // eslint-disable-next-line no-process-env
     process.env.UNIVERSAL_RESOLVER_ROOT = root;
     tryLoad( root );
   } );
@@ -47,6 +51,7 @@ describe( 'findConfig', () => {
     process.chdir( __dirname );
     const root = path.resolve( __dirname, 'fixtures', 'js-repos' );
     const config = path.resolve( root, 'universal-resolver.js' );
+    // eslint-disable-next-line no-process-env
     process.env.UNIVERSAL_RESOLVER_CONFIG = config;
     tryLoad( root );
   } );
@@ -57,7 +62,7 @@ function tryRepo( fixture, subdir='.' ) {
   const root = path.resolve( __dirname, 'fixtures', fixture );
   const start = path.resolve( root, subdir );
   process.chdir( start );
-  tryLoad( root );
+  return tryLoad( root );
 }
 
 function tryLoad( root ) {
@@ -72,4 +77,5 @@ function tryLoad( root ) {
   b.should.have.property( 'name', 'package-b' );
   b.should.have.property( 'root' );
   b.should.have.property( 'fakeOption', 'baz' );
+  return config;
 }
