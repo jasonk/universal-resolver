@@ -233,7 +233,7 @@ class Resolver {
         debug( `${which} removed prefix and got ${target}` );
         target = path.resolve( opkg.root, opkg.source, `./${target}` );
         debug( `${which} resolved to ${target}` );
-        target = this.makeRelative( origin, target );
+        target = this.makeRelative( target, origin );
         debug( `prefix relativized to ${target}` );
       }
     }
@@ -242,6 +242,11 @@ class Resolver {
       || ( opkg && matches( opkg.prefix ) );
 
     const tpkg = rel ? opkg : this.findPackageForTarget( target );
+
+    if ( ! tpkg ) {
+      debug( `Nothing to see here, move along` );
+      return target;
+    }
 
     if ( tpkg && ( tpkg !== opkg ) && matches( tpkg.name ) ) {
       const direct = path.resolve(
@@ -273,12 +278,18 @@ class Resolver {
     debug( 'Finishing', target );
 
     target = path.normalize( target );
+    // If we were asked for a relative path, and we resolved to an
+    // absolute path, then make it relative again
     if ( opts.relative && path.isAbsolute( target ) ) {
-      target = this.makeRelative( origin, target );
+      target = this.makeRelative( target, origin );
     }
+    // If we were asked for an absolute path, and we resolved to
+    // a relative one, then turn it into an absolute path
     if ( ! opts.relative && ! path.isAbsolute( target ) ) {
       target = path.resolve( path.dirname( origin ), target );
     }
+    if ( ! path.isAbsolute( target ) ) target = this.makeRelative( target );
+
     // If the original request ended with a slash, make sure the
     // resolved one does too..
     if ( initialTarget.endsWith( '/' ) && ! target.endsWith( '/' ) ) {
@@ -288,8 +299,8 @@ class Resolver {
     return target;
   }
 
-  makeRelative( origin, target ) {
-    target = path.relative( path.dirname( origin ), target );
+  makeRelative( target, origin ) {
+    if ( origin ) target = path.relative( path.dirname( origin ), target );
     // If it was in a subdirectory then path.relative won't
     // include the './', but we need it or it will be
     // interpreted as a module name

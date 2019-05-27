@@ -16,6 +16,7 @@ if ( typeof originalResolver !== 'function' ) {
 Module._resolveFilename = replacementResolver;
 
 function replacementResolver( request, parent, isMain, options ) {
+  console.log( request, parent, isMain, options );
   const initialRequest = request;
   request = resolver( request, parent.filename );
   if ( initialRequest !== request ) {
