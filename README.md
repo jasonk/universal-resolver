@@ -69,6 +69,13 @@ module.exports = {
 
 ## Configuring Tools ##
 
+### Node ###
+
+To use with node (outside of the scope of Babel), just load the
+`universal-resolver/node` module.  It wraps the internal
+`Module._resolveFilename` function with one that does our transforming
+first and then calls the original.
+
 ### Babel ###
 
 To use with [Babel][babel] just add `universal-resolver/babel` to the

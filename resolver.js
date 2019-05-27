@@ -99,7 +99,7 @@ class Resolver {
    * @default true
    *
    * Set to false to disable resolving configured packages to their
-   * "main" instead of the package.json main.
+   * source instead of the package.json main.
    */
 
   /**
@@ -275,13 +275,12 @@ class Resolver {
       return finish();
     }
 
-    /*
     if ( this.resolveMain && target === tpkg.name ) {
+      target = path.resolve( tpkg.root, tpkg.source );
+      finish();
     }
-    */
 
     // if ( this.resolvePackages ) this.handlePackages( ctx );
-    // if ( this.resolveMain ) this.handleMain( ctx );
     return finish();
   }
 

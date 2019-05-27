@@ -24,7 +24,7 @@ function UniversalResolverBabelPlugin( babel ) {
   const t = babel.types;
 
   return {
-    name    : 'root-plugin',
+    name    : 'universal-resolver',
     visitor : {
       CallExpression( path, state ) {
         const callee = path.node.callee;

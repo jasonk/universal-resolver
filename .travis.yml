@@ -1,9 +1,20 @@
 language: node_js
 cache: npm
-node_js: [ '10', '11', '12' ]
-after_success:
-  - ./node_modules/.bin/coveralls < coverage/lcov.info
-
+node_js:
+- '10'
+- '11'
+- '12'
+script:
+- yarn test
+- codecov
 #deploy:
+#  on:
+#    tags: true
+#    branch: master
 #  provider: npm
-#  email: 'email@jasonkohles.com'
+#  email: email@jasonkohles.com
+#  api_key:
+#    secure: Ee+4a4AxrtQX9tCJXEFJZnxJPqTb9TgqxDR4nRCrIPm8zqxIixXxI5pnELxURs7k/zstKepCa4A0iyjj13iwATb0Qx4PJrZ6MAyYxAavedYGhK3bmy7SNrw7o8B16ViB9o6zgw5fTKr9Ceg0UUECf5gZPoGSRl28rwCLuccXJ7Rd5g2j5ZXcelDohfvlXzzjz8ODgsfI/Xx5rWKlJ73nwfv/A1u8BvMFqP9/Kwj9b0FogbWLUAP4ujXa95uUL2UDyzcAruqYaD5ZrNJi+QhZx3lsRJbOp7M1cEXFhK9bCNUXyEksAX8tllkHQnIEu3xzBRv3SPwmjUtjKw1tuEQ8Hqx+Qt1y2H1pr4T5JLsts6Y4SpN6qRNFnEhoMIthqdbSs02ZKrgxYQLj6cVlSyyALg3qKdKE+pPvLyGaw+wTNs47Utr8roN7dcs+ZqgPGnoeyIoO8ltGeC6LO5l8ZQGsN8bHkiP8tZ1ly91og7ttsBWEAgRGqMjSr/d+8TV790Zl25834zSp7mAxm4/jt4iT9LUh91JgzTbgcBFfhFKruxpid8taG/dAI0JCZuEXs4GGI+tPVJ0sUbf5hA1EJ2QOKgnU0BnALUgh0RpYr31N1NN6iMdJKBWopu4lZBV2+BEUudWFz3/pgOCwmI+Jq1HaAyd+2msHZ6gQdpbYROiQqOM=
+env:
+  global:
+    secure: HqeD87vWnsiqsAKDMDxXt1+HqvxFvwFTVHM6t0o6WNRb1sHXDEoOgpxBfStfDSfkbblWKc486YOrEUfYWesUWUCCbGjbYB1I6EmkqMtIyjnGYwjBYNeuanStWDcaRD08raG2x7tT+RPNO/YEM7y7ofKQW1BqTOok/2IQqlscfqcW3ISF9nnEiRuD1Ll8V8HpGDxrvHZEybU8Gwq7YZ0hduGwPOaP/M1AHlJQuLtVTBGyAQvS/hihPFpT2lJvibVzA825MKsl+XKc8bQnSCzoSQ440jyjGobSZ0OBndAzYrnVoLcDWltXu+L7D4z1gbdfgZLJ5wqZqSWWiP6F+S+FDmB1LFuy4F0IIF3p/0sjQwFigcd3IpP3dGxWpcE6W46Gvg6/9PaXHcl63wyusz5gLn4IxzoyeGlyALTrsWCRbwulqNFm3kdv24NtjQ6jTSCw1K2fW4pW/2hXV4ji/UxuuDAMxZKdpeKku81UGhvn0BWNHAVt8B6QqChBdwdAoMyeVe9x5fCaVUQjfBEO6CIbwU+09rFU7VX2NbNCqskZdUla9f6viHqoY4DmTRGSBKxpvjKcyPzR5LNzy1dm8969mm0Fu2FJv5lUCwh16cBhevNCHN23+dIhuuZoAOkuBFClM9yZvpP8M9+IFCpiK8HIl9O75HhAk81fY5nnhA5OKuo=
