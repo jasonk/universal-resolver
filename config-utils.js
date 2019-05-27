@@ -3,6 +3,8 @@ const path = require( 'path' ),
 
 const debug = require( 'debug' )( 'universal-resolver:config-utils' );
 
+// TODO - Should have a way to specify one or more alternate monorepo
+// locations
 module.exports = findConfig;
 
 function env( key ) {
@@ -35,7 +37,7 @@ function findConfig() {
       return config;
     }
     const next = path.resolve( iter, '..' );
-    if ( next === iter || next === '/' ) return;
+    if ( next === iter ) return;
     iter = next;
     continue;
   }
@@ -50,6 +52,7 @@ function resolveConfig( config, directory ) {
   if ( Array.isArray( config ) ) config = { packages : config };
   config.root = directory;
   if ( ! config.source ) config.source = 'src';
+  if ( ! config.dest ) config.dest = 'dist';
   if ( ! config.prefix ) config.prefix = '~';
   if ( ! config.mode ) {
     // eslint-disable-next-line no-process-env
@@ -69,6 +72,7 @@ function resolveConfig( config, directory ) {
 function findConfigIn( dir ) {
   debug( 'findConfigIn', dir );
   const ownConfig = readConfig( dir, 'universal-resolver' );
+  debug( 'ownConfig', ownConfig );
   if ( ownConfig ) {
     debug( 'found universal-resolver config in', dir, ownConfig );
     return resolveConfig( ownConfig, dir );
@@ -76,42 +80,54 @@ function findConfigIn( dir ) {
   for ( const name of [ 'package.json', 'lerna.json' ] ) {
     const config = readConfig( dir, name );
     if ( ! config ) continue;
-    if ( ! ( config.workspaces || config.packages ) ) continue;
+    const ws = config.workspaces;
+    const pkgs = config.packages;
+    const ur = config[ 'universal-resolver' ];
+    if ( ! ( ws || pkgs || ur ) ) continue;
     debug( 'found', name, 'in', dir );
-    const conf = config[ 'universal-resolver' ] || {};
-    conf.root = dir;
-    if ( ! conf.packages ) {
-      conf.packages = config.workspaces || config.packages;
-    }
+    const conf = ur || {};
+    if ( ! conf.packages ) conf.packages = ws || pkgs;
     return resolveConfig( conf, dir );
   }
 }
 
 function readConfig( dir, name ) {
   try {
+    const file = path.join( dir, name );
     return require( path.join( dir, name ) );
   } catch( err ) {
-    if ( err.code === 'MODULE_NOT_FOUND' ) return;
+    if ( err.code === 'MODULE_NOT_FOUND' ) {
+      if ( err.message.includes( name ) ) return;
+    }
     throw err;
   }
 }
 
 function preparePackages( config ) {
-  if ( ! ( Array.isArray( config.packages ) && config.packages.length ) ) {
-    throw new Error( '[universal-resolver] Could not find packages' );
-  }
+  if ( ! Array.isArray( config.packages ) ) config.packages = [];
+  // throw new Error( '[universal-resolver] Could not find packages' );
   const pathto = file => path.resolve( config.root, file );
-  for ( let i = config.packages.length ; i >= 0 ; i-- ) {
-    const pkg = config.packages[ i ];
-    if ( typeof pkg !== 'string' ) continue;
-    debug( `Checking ${pkg} for globs` );
-    if ( ! globby.hasMagic( pkg ) ) continue;
-    config.packages.splice( i, 1, ...globby.sync( pkg, {
-      cwd             : config.root,
-      onlyDirectories : true,
-    } ).map( pathto ) );
-  }
-  return config.packages.map( preparePackage ).filter( Boolean );
+  const pkgs = [];
+  config.packages.forEach( pkg => {
+    const root = ( typeof pkg === 'string' ) ? pkg : pkg.root;
+    if ( ! root ) {
+      const json = JSON.stringify( pkg );
+      console.error( `[universal-resolver] No root for ${json}` );
+      return;
+    }
+    const files = [];
+    const pack = ( name ) => files.push( path.resolve( config.root, name ) );
+    if ( globby.hasMagic( root ) ) {
+      const opts = { cwd : config.root, onlyDirectories : true };
+      globby.sync( pkg, opts ).forEach( pack );
+    } else {
+      pack( pkg );
+    }
+    if ( typeof pkg === 'string' ) pkg = {};
+    debug( 'FILES', files );
+    files.forEach( file => pkgs.push( { ...pkg, root : file } ) );
+  } );
+  return pkgs.map( preparePackage );
 }
 
 function preparePackage( pkg ) {
