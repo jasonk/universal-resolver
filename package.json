@@ -11,6 +11,7 @@
     "config-utils.js",
     "eslint.js",
     "index.js",
+    "node.js",
     "resolver.js",
     "webpack.js"
   ],
