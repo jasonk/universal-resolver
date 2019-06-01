@@ -151,7 +151,6 @@ class Resolver {
   }
 
   get prod() { return this.mode === 'production'; }
-  get dev() { return this.mode !== 'production'; }
 
   findPackageForOrigin( file ) {
     for ( const pkg of this.packages ) {
@@ -241,6 +240,10 @@ class Resolver {
     const rel = matches( '.' ) || matches( '..' )
       || ( opkg && matches( opkg.prefix ) );
 
+    if ( this.prod ) {
+      debug( `Building for production, skipping everything else` );
+      return target;
+    }
     const tpkg = rel ? opkg : this.findPackageForTarget( target );
 
     if ( ! tpkg ) {
@@ -258,18 +261,14 @@ class Resolver {
         target = direct;
       } else if ( this.resolvePackages ) {
         target = path.resolve(
-          tpkg.root,
-          this.prod ? tpkg.dest : tpkg.source,
+          tpkg.root, tpkg.source,
           './' + target.substring( tpkg.name.length ),
         );
         debug( `resolvePackages resolved to ${target}` );
       }
       if ( this.resolveMain ) {
         if ( target === tpkg.name || target === tpkg.root ) {
-          target = path.resolve(
-            tpkg.root,
-            this.prod ? tpkg.dest : tpkg.source,
-          );
+          target = path.resolve( tpkg.root, tpkg.source );
           debug( `resolveMain resolved to ${target}` );
         }
       }
