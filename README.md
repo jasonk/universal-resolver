@@ -18,8 +18,11 @@ provide any kind of configuration then it will attempt to find either
 a `lerna.json` or `package.json` file that indicates a monorepo and use
 that to figure out where the package directories are.
 
-If you don't have a monorepo config but you do you can fake it by putting
-a `universal-resolver.json` file
+If you don't have a monorepo config but you do have all your relevant
+repositories in one directory then you can fake it by putting
+a `universal-resolver.json` file in that upper directory, where it can
+be used to provide configuration for all the repositories in the
+directory.
 
 ## manual configuration ##
 
